@@ -1,40 +1,19 @@
 package admin
 
-import (
-	"fmt"
-)
+import "context"
 
-var users []User // времанное база данных
-
-func InitSuperAdmin() {
-
-	for _, user := range users {
-		if user.Role == "superadmin" {
-			fmt.Println("Супер-админ уже существует")
-			return
-		}
-	}
-	superAdmin := User{
-		ID:        1,
-		FirstName: "FAdmin",
-		LastName:  "LAdmin",
-		Email:     "admin@crm.kz",
-		Password:  "123456", // ПОТОМ ЗАМЕНИМ НА ХЭШ
-		Role:      "superadmin",
-	}
-	users = append(users, superAdmin)
-	fmt.Println("Супер-админ создан:", superAdmin)
+type Service struct {
+	repo *Repository
 }
 
-// type User struct{
-// 	 ID int
-// 	 FirstName string
-// 	 LastName string
-// 	 Email string
-// 	 PhoneNumber string
-// 	 Role string
-// }
+func NewService(repo *Repository) *Service {
+	return &Service{repo: repo}
+}
 
-// func (User) getUserById (userId int) User {
-// 	return User{ID: 1, FirstName: "Dimash", LastName: "Arystambek", Email: "Hello@gmail.com"}
-// }
+func (s *Service) CreateUser(ctx context.Context, user User) error {
+	return s.repo.CreateUser(ctx, user)
+}
+
+func (s *Service) InitSuperAdmin() error {
+	return s.repo.InitSuperAdmin()
+}
