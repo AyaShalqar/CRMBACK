@@ -14,6 +14,16 @@ func InitSuperAdmin() {
 			return
 		}
 	}
+	superAdmin := User{
+		ID:        1,
+		FirstName: "FAdmin",
+		LastName:  "LAdmin",
+		Email:     "admin@crm.kz",
+		Password:  "123456", // ПОТОМ ЗАМЕНИМ НА ХЭШ
+		Role:      "superadmin",
+	}
+	users = append(users, superAdmin)
+	fmt.Println("Супер-админ создан:", superAdmin)
 }
 
 // type User struct{
