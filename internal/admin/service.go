@@ -1,6 +1,8 @@
 package admin
 
-import "context"
+import (
+	"context"
+)
 
 type Service struct {
 	repo *Repository
@@ -27,4 +29,8 @@ func (s *Service) CreateUserByAdmin(ctx context.Context, dto CreateUserDto) erro
 		Role:      dto.Role,
 	}
 	return s.repo.CreateUser(ctx, user)
+}
+
+func (s *Service) GetUsers(ctx context.Context) ([]User, error) {
+	return s.repo.GetUsers(ctx)
 }

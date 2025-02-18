@@ -33,7 +33,7 @@ func main() {
 	// Роуты
 	r := chi.NewRouter()
 	r.Post("/admin/users", adminHandler.CreateUser)
-
+	r.Get("/admin/users", adminHandler.GetUsers)
 	fmt.Println("Server running on :8080")
 	http.ListenAndServe(":8080", r)
 }

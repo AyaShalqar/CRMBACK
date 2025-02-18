@@ -81,3 +81,31 @@ func (r *Repository) CreateUser(ctx context.Context, user User) error {
 	}
 	return nil
 }
+
+func (r *Repository) GetUsers(ctx context.Context) ([]User, error) {
+	rows, err := r.db.Conn.Query(ctx, `
+		SELECT id, first_name, last_name, email, password, role
+		FROM users
+	`)
+
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения списка пользователей: %w", err)
+	}
+	defer rows.Close()
+	var users []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Role)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка сканирования пользователя: %w", err)
+		}
+		users = append(users, user)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ошибка итерации по пользователям: %w", err)
+	}
+	return users, nil
+}
+
+// func (r *Repository) UpdateUser(ctx context.Context) (User, error) {
+// }

@@ -29,3 +29,14 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Пользователь создан"))
 }
+
+func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
+
+	users, err := h.service.GetUsers(r.Context())
+	if err != nil {
+		http.Error(w, "не удалось получить пользователей: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
