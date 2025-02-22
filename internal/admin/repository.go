@@ -126,3 +126,17 @@ func (r *Repository) UpdateUser(ctx context.Context, user User) error {
 	}
 	return (nil)
 }
+func (r *Repository) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	var user User
+	err := r.db.Conn.QueryRow(ctx, `
+		SELECT id, first_name, last_name, email, password, role
+		FROM users
+		WHERE email = $1
+	`, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Role)
+
+	if err != nil {
+		return User{}, fmt.Errorf("пользователь не найден: %w", err)
+	}
+
+	return user, nil
+}

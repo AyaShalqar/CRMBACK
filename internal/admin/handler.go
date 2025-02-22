@@ -1,15 +1,21 @@
 package admin
 
 import (
+	"crm-backend/internal/auth"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Handler struct {
 	service *Service
+}
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func NewHandler(service *Service) *Handler {
@@ -90,4 +96,32 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Пользователь обновлён"))
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "неправильный формат данных", http.StatusBadRequest)
+		return
+	}
+	user, err := h.service.GetUserByEmail(r.Context(), req.Email)
+
+	if err != nil {
+		http.Error(w, "пользователь не найден", http.StatusUnauthorized)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		http.Error(w, "неверный пароль", http.StatusUnauthorized)
+		return
+	}
+	token, err := auth.GenerateJWT(user.Email, user.Role)
+	if err != nil {
+		http.Error(w, "ошибка генерации токена", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
+
 }

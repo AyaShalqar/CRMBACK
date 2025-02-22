@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"crm-backend/internal/admin"
+	"crm-backend/internal/auth"
 	"crm-backend/internal/db"
 )
 
@@ -30,13 +31,17 @@ func main() {
 		log.Fatal("Ошибка создания супер-админа:", err)
 	}
 
-	// Роуты
 	r := chi.NewRouter()
-	r.Post("/admin/users", adminHandler.CreateUser)
-	r.Get("/admin/users", adminHandler.GetUsers)
-	r.Delete("/admin/users/{id}", adminHandler.DeleteUser)
-	r.Put("/admin/users/{id}", adminHandler.UpdateUser)
 
+	r.Post("/admin/login", adminHandler.Login)
+
+	r.Route("/admin/users", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware) // ⬅️ Защита через JWT
+		r.Get("/", adminHandler.GetUsers)
+		r.Post("/", adminHandler.CreateUser)
+		r.Put("/{id}", adminHandler.UpdateUser)
+		r.Delete("/{id}", adminHandler.DeleteUser)
+	})
 	fmt.Println("Server running on :8080")
 	http.ListenAndServe(":8080", r)
 }
