@@ -107,5 +107,22 @@ func (r *Repository) GetUsers(ctx context.Context) ([]User, error) {
 	return users, nil
 }
 
-// func (r *Repository) UpdateUser(ctx context.Context) (User, error) {
-// }
+func (r Repository) DeleteUser(ctx context.Context, id int) error {
+	_, err := r.db.Conn.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("ошибка удаления пользователя: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) UpdateUser(ctx context.Context, user User) error {
+	_, err := r.db.Conn.Exec(ctx,
+		`UPDATE users 
+		SET first_name = $1, last_name = $2, email = $3, role = $4
+		WHERE id = $5`,
+		user.FirstName, user.LastName, user.Email, user.Role, user.ID)
+	if err != nil {
+		return fmt.Errorf("ошибка обновления пользователя: %w", err)
+	}
+	return (nil)
+}

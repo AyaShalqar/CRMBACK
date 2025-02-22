@@ -34,3 +34,11 @@ func (s *Service) CreateUserByAdmin(ctx context.Context, dto CreateUserDto) erro
 func (s *Service) GetUsers(ctx context.Context) ([]User, error) {
 	return s.repo.GetUsers(ctx)
 }
+
+func (s *Service) DeleteUser(ctx context.Context, id int) error {
+	return s.repo.DeleteUser(ctx, id)
+}
+
+func (s *Service) UpdateUser(ctx context.Context, user User) error {
+	return s.repo.UpdateUser(ctx, user)
+}

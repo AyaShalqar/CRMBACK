@@ -34,6 +34,9 @@ func main() {
 	r := chi.NewRouter()
 	r.Post("/admin/users", adminHandler.CreateUser)
 	r.Get("/admin/users", adminHandler.GetUsers)
+	r.Delete("/admin/users/{id}", adminHandler.DeleteUser)
+	r.Put("/admin/users/{id}", adminHandler.UpdateUser)
+
 	fmt.Println("Server running on :8080")
 	http.ListenAndServe(":8080", r)
 }
