@@ -10,6 +10,7 @@ import (
 	"crm-backend/internal/admin"
 	"crm-backend/internal/auth"
 	"crm-backend/internal/db"
+	"crm-backend/internal/shop"
 )
 
 func main() {
@@ -42,6 +43,16 @@ func main() {
 		r.Put("/{id}", adminHandler.UpdateUser)
 		r.Delete("/{id}", adminHandler.DeleteUser)
 	})
+	shopRepo := shop.NewRepository(database)
+	shopService := shop.NewService(shopRepo)
+	shopHandler := shop.NewHandler(shopService)
+
+	r.Route("/admin/shops", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware) // ⬅️ Только авторизованные могут работать с магазинами
+		r.Post("/", shopHandler.CreateShopHandler)
+		r.Get("/", shopHandler.GetShopsHandler)
+	})
+
 	fmt.Println("Server running on :8080")
 	http.ListenAndServe(":8080", r)
 }
