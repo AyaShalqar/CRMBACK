@@ -51,11 +51,15 @@ func main() {
 	shopService := shop.NewService(shopRepo)
 	shopHandler := shop.NewHandler(shopService)
 	r.Route("/admin/shops", func(r chi.Router) {
-		r.Use(auth.AuthMiddleware) // ⬅️ Только авторизованные могут работать с магазинами
+		r.Use(auth.AuthMiddleware)
 		r.Post("/", shopHandler.CreateShopHandler)
 		r.Get("/", shopHandler.GetShopsHandler)
 	})
 
+	r.Route("/owner/shops", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Get("/", shopHandler.GetShopsByOwner)
+	})
 	fmt.Println("Server running on :8080")
 	http.ListenAndServe(":8080", r)
 }
