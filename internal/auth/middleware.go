@@ -23,7 +23,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Добавляем данные юзера в контекст
 		ctx := context.WithValue(r.Context(), UserContextKey{}, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

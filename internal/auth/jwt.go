@@ -9,20 +9,25 @@ import (
 )
 
 var SecretKey = []byte("super_secret_key") // ❗ В будущем загружай из .env
+
 type Claims struct {
+	ID    int    `json:"id"`
 	Email string `json:"email"`
 	Role  string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(email, role string) (string, error) {
+// GenerateJWT генерирует токен для пользователя
+func GenerateJWT(id int, email, role string) (string, error) {
 	claims := Claims{
+		ID:    id, // ⬅️ Теперь `id` передаётся как аргумент.
 		Email: email,
 		Role:  role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // ❗ Токен живёт 24 часа
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Токен живёт 24 часа
 		},
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(SecretKey)
 
@@ -33,6 +38,7 @@ func GenerateJWT(email, role string) (string, error) {
 	return signedToken, nil
 }
 
+// ParseJWT проверяет токен и извлекает данные
 func ParseJWT(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return SecretKey, nil

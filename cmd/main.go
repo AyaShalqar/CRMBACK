@@ -44,9 +44,12 @@ func main() {
 		r.Delete("/{id}", adminHandler.DeleteUser)
 	})
 	shopRepo := shop.NewRepository(database)
+
+	if err := shopRepo.Migrate(); err != nil {
+		log.Fatal("Ошибка миграции shops:", err)
+	}
 	shopService := shop.NewService(shopRepo)
 	shopHandler := shop.NewHandler(shopService)
-
 	r.Route("/admin/shops", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware) // ⬅️ Только авторизованные могут работать с магазинами
 		r.Post("/", shopHandler.CreateShopHandler)

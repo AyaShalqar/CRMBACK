@@ -104,8 +104,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "неправильный формат данных", http.StatusBadRequest)
 		return
 	}
-	user, err := h.service.GetUserByEmail(r.Context(), req.Email)
 
+	user, err := h.service.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
 		http.Error(w, "пользователь не найден", http.StatusUnauthorized)
 		return
@@ -115,7 +115,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "неверный пароль", http.StatusUnauthorized)
 		return
 	}
-	token, err := auth.GenerateJWT(user.Email, user.Role)
+
+	// ✅ Теперь передаём user.ID в токен
+	token, err := auth.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		http.Error(w, "ошибка генерации токена", http.StatusInternalServerError)
 		return
@@ -123,5 +125,4 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
-
 }

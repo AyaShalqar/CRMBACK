@@ -71,14 +71,16 @@ func (r *Repository) CreateUser(ctx context.Context, user User) error {
 	if err != nil {
 		return fmt.Errorf("ошибка хэширования пароля: %w", err)
 	}
+
 	_, err = r.db.Conn.Exec(ctx, `
-		INSERT INTO users (id, first_name, last_name, email, password, role)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, user.ID, user.FirstName, user.LastName, user.Email, hashedPassword, user.Role)
+		INSERT INTO users (first_name, last_name, email, password, role)
+		VALUES ($1, $2, $3, $4, $5)
+	`, user.FirstName, user.LastName, user.Email, hashedPassword, user.Role) // ❌ Убрали id
 
 	if err != nil {
 		return fmt.Errorf("ошибка создания пользователя: %w", err)
 	}
+
 	return nil
 }
 
