@@ -75,7 +75,7 @@ func (r *Repository) CreateUser(ctx context.Context, user User) error {
 	_, err = r.db.Conn.Exec(ctx, `
 		INSERT INTO users (first_name, last_name, email, password, role)
 		VALUES ($1, $2, $3, $4, $5)
-	`, user.FirstName, user.LastName, user.Email, hashedPassword, user.Role) // ❌ Убрали id
+	`, user.FirstName, user.LastName, user.Email, hashedPassword, user.Role) 
 
 	if err != nil {
 		return fmt.Errorf("ошибка создания пользователя: %w", err)

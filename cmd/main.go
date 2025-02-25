@@ -10,6 +10,7 @@ import (
 	"crm-backend/internal/admin"
 	"crm-backend/internal/auth"
 	"crm-backend/internal/db"
+	"crm-backend/internal/employee"
 	"crm-backend/internal/shop"
 )
 
@@ -24,7 +25,6 @@ func main() {
 	adminService := admin.NewService(adminRepo)
 	adminHandler := admin.NewHandler(adminService)
 
-	// Миграция и супер-админ
 	if err := adminRepo.Migrate(); err != nil {
 		log.Fatal("Ошибка миграции:", err)
 	}
@@ -37,7 +37,7 @@ func main() {
 	r.Post("/admin/login", adminHandler.Login)
 
 	r.Route("/admin/users", func(r chi.Router) {
-		r.Use(auth.AuthMiddleware) // ⬅️ Защита через JWT
+		r.Use(auth.AuthMiddleware)
 		r.Get("/", adminHandler.GetUsers)
 		r.Post("/", adminHandler.CreateUser)
 		r.Put("/{id}", adminHandler.UpdateUser)
@@ -50,15 +50,27 @@ func main() {
 	}
 	shopService := shop.NewService(shopRepo)
 	shopHandler := shop.NewHandler(shopService)
+
 	r.Route("/admin/shops", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Post("/", shopHandler.CreateShopHandler)
 		r.Get("/", shopHandler.GetShopsHandler)
 	})
+	employeeRepo := employee.NewRepository(database)
+	if err := employeeRepo.Migrate(); err != nil {
+		log.Fatal("Ошибка миграции employees:", err)
+	}
+	employeeService := employee.NewService(employeeRepo)
+	employeeHandler := employee.NewHandler(employeeService)
 
 	r.Route("/owner/shops", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/", shopHandler.GetShopsByOwner)
+		r.Route("/{id}/employees", func(r chi.Router) {
+			r.Post("/", employeeHandler.AddEmployee)
+			r.Get("/", employeeHandler.GetEmployeesByShop)
+			r.Delete("/{employee_id}", employeeHandler.RemoveEmployee)
+		})
 	})
 	fmt.Println("Server running on :8080")
 	http.ListenAndServe(":8080", r)
