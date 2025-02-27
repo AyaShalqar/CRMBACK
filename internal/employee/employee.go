@@ -6,5 +6,4 @@ type Employee struct {
 	Email  string `json:"email"`
 	ShopID int    `json:"shop_id"`
 	Role   string `json:"role"`
-	Udalu  string `json:"role"`
 }
