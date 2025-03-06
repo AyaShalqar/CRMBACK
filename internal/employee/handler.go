@@ -97,3 +97,6 @@ func (h *Handler) RemoveEmployee(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Сотрудник удалён"))
 }
+func (h *Handler) CreateItems(w http.ResponseWriter, r *http.Request){
+	
+}

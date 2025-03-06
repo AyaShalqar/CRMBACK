@@ -101,3 +101,36 @@ func (r *Repository) GetShopsByOwner(ctx context.Context, ownerID int) ([]Shop, 
 	}
 	return shops, nil
 }
+
+func (r *Repository) MigrateItems() error {
+	_, err := r.db.Conn.Exec(context.Background(), `
+	CREATE TABLE IF NOT EXISTS items (
+		id SERIAL PRIMARY KEY,
+		shop_id INT REFERENCES shops(id) ON DELETE CASCADE,
+		name VARCHAR(255) NOT NULL,
+		brand VARCHAR(255) NOT NULL,
+		category VARCHAR(255),
+		size VARCHAR(50),
+		purchase_price NUMERIC(10, 2) DEFAULT 0,
+		sale_price NUMERIC(10, 2) DEFAULT 0,
+		photo_url TEXT,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	);
+	`)
+	if err != nil {
+		return fmt.Errorf("ошибка миграции items: %w", err)
+	}
+	fmt.Println("Миграция items выполнена успешно")
+	return nil
+}
+
+func (r *Repository) CreateItem(ctx context.Context, item *Item) error {
+	query := `
+	INSERT INTO items 
+		(shop_id, name, brand, category, size, purchase_price, sale_price, photo_url, created_at, updated_at) 
+	VALUES 
+		($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+	RETURNING id
+`
+}
