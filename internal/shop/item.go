@@ -4,8 +4,8 @@ import "time"
 
 // Item — сущность товара
 type Item struct {
-	ID            int64     `json:"id" db:"id"`
-	ShopID        int64     `json:"shop_id" db:"shop_id"`
+	ID            int       `json:"id" db:"id"`
+	ShopID        int       `json:"shop_id" db:"shop_id"`
 	Name          string    `json:"name" db:"name"`
 	Brand         string    `json:"brand" db:"brand"`
 	Category      string    `json:"category" db:"category"` // "штаны", "футболка", "кофта" и т.д.
