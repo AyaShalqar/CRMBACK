@@ -17,14 +17,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
-// В идеале строку подключения берем из ENV или конфига.
-// Например: POSTGRES_DSN="postgres://crm_user:crm_pass@localhost:5433/crm_db"
+// Получаем строку подключения к БД из переменной окружения
 func getPostgresDSN() string {
 	dsn := os.Getenv("POSTGRES_DSN")
 	if dsn == "" {
-		// fallback – захардкожено, но лучше, чтобы в реальном продакшене было всегда в ENV
 		dsn = "postgres://crm_user:crm_pass@localhost:5433/crm_db"
 	}
 	return dsn
@@ -38,17 +37,17 @@ func main() {
 	}
 	defer database.Close()
 
-	// 2. Прогоняем миграции
+	// 2. Запускаем миграции
 	if err := runMigrations(database); err != nil {
 		log.Fatal("Ошибка миграции:", err)
 	}
 
-	// 3. Инициализируем все репозитории, сервисы, хендлеры
+	// 3. Инициализируем репозитории, сервисы, хендлеры
 	adminRepo := admin.NewRepository(database)
 	adminService := admin.NewService(adminRepo)
 	adminHandler := admin.NewHandler(adminService)
 
-	// Супер-админ (пример) – делаем после миграций
+	// Создаём супер-админа после миграций
 	if err := adminRepo.InitSuperAdmin(); err != nil {
 		log.Fatal("Ошибка создания супер-админа:", err)
 	}
@@ -61,7 +60,7 @@ func main() {
 	employeeService := employee.NewService(employeeRepo)
 	employeeHandler := employee.NewHandler(employeeService)
 
-	// 4. Собираем все роуты
+	// 4. Настраиваем маршруты с CORS
 	r := setupRoutes(adminHandler, shopHandler, employeeHandler)
 
 	// 5. Запускаем сервер с graceful shutdown
@@ -77,14 +76,14 @@ func main() {
 		}
 	}()
 
-	// Ждём сигнала (Ctrl+C, kill и т.д.) для корректной остановки
+	// Ожидаем SIGINT (Ctrl+C) или SIGTERM
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	fmt.Println("Shutting down server...")
 
-	// Попробуем закрыть сервер за 5 секунд
+	// Завершаем сервер за 5 секунд
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -95,7 +94,7 @@ func main() {
 	fmt.Println("Server exiting")
 }
 
-// initDB - отдельная функция для подключения к PostgreSQL
+// Подключение к PostgreSQL
 func initDB() (*db.DB, error) {
 	dsn := getPostgresDSN()
 	database, err := db.NewDB(dsn)
@@ -105,15 +104,13 @@ func initDB() (*db.DB, error) {
 	return database, nil
 }
 
-// runMigrations - здесь собраны вызовы миграций
+// Запуск всех миграций
 func runMigrations(database *db.DB) error {
-	// 1) Миграция таблиц админов/юзеров
 	adminRepo := admin.NewRepository(database)
 	if err := adminRepo.Migrate(); err != nil {
 		return fmt.Errorf("Ошибка миграции admin/users: %w", err)
 	}
 
-	// 2) Миграция магазинов
 	shopRepo := shop.NewRepository(database)
 	if err := shopRepo.Migrate(); err != nil {
 		return fmt.Errorf("Ошибка миграции shops: %w", err)
@@ -122,7 +119,6 @@ func runMigrations(database *db.DB) error {
 		return fmt.Errorf("Ошибка миграции items: %w", err)
 	}
 
-	// 3) Миграция сотрудников
 	employeeRepo := employee.NewRepository(database)
 	if err := employeeRepo.Migrate(); err != nil {
 		return fmt.Errorf("Ошибка миграции employees: %w", err)
@@ -131,7 +127,7 @@ func runMigrations(database *db.DB) error {
 	return nil
 }
 
-// setupRoutes - регистрируем все эндпоинты на Chi
+// Настройка роутов с поддержкой CORS
 func setupRoutes(
 	adminHandler *admin.Handler,
 	shopHandler *shop.Handler,
@@ -139,14 +135,24 @@ func setupRoutes(
 ) *chi.Mux {
 	r := chi.NewRouter()
 
-	// Полезные middleware: восстановление после паник, логирование, и т.д.
+	// 🌟 Добавляем CORS middleware
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"}, // Фронтенд
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // 5 минут кэширования CORS
+	}))
+
+	// Полезные middleware
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
-	// Пример: /admin/login
+	// Авторизация
 	r.Post("/admin/login", adminHandler.Login)
 
-	// Группа роутов: /admin/users
+	// Управление пользователями
 	r.Route("/admin/users", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/", adminHandler.GetUsers)
@@ -155,21 +161,19 @@ func setupRoutes(
 		r.Delete("/{id}", adminHandler.DeleteUser)
 	})
 
-	// Группа роутов: /admin/shops
+	// Управление магазинами
 	r.Route("/admin/shops", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Post("/", shopHandler.CreateShopHandler)
 		r.Get("/", shopHandler.GetShopsHandler)
 	})
 
-	// Группа роутов: /owner/shops
+	// Управление магазинами владельца
 	r.Route("/owner/shops", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
-
-		// Получить все магазины конкретного владельца
 		r.Get("/", shopHandler.GetShopsByOwner)
 
-		// Роуты для сотрудников: /owner/shops/{id}/employees
+		// Управление сотрудниками магазина
 		r.Route("/{id}/employees", func(r chi.Router) {
 			r.Post("/", employeeHandler.AddEmployee)
 			r.Get("/", employeeHandler.GetEmployeesByShop)
