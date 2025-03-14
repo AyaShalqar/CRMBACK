@@ -21,6 +21,7 @@ func (r *Repository) Migrate() error {
 			name VARCHAR(100) NOT NULL,
 			email VARCHAR(100) UNIQUE NOT NULL,
 			shop_id INT REFERENCES shops(id) ON DELETE CASCADE,
+;
 			role VARCHAR(50) NOT NULL
 		);
 	`)
@@ -42,8 +43,8 @@ func (r *Repository) IsOwner(ctx context.Context, shopID, ownerID int) (bool, er
 }
 
 func (r *Repository) AddEmployee(ctx context.Context, employee Employee) error {
-	query := `INSERT INTO employees (name, email, shop_id, role) VALUES ($1, $2, $3, $4)`
-	_, err := r.db.Conn.Exec(ctx, query, employee.Name, employee.Email, employee.ShopID, employee.Role)
+	query := `INSERT INTO employees (name, password, email, shop_id, role) VALUES ($1, $2, $3, $4, $5)`
+	_, err := r.db.Conn.Exec(ctx, query, employee.Name, employee.Email, employee.ShopID, employee.Password, employee.Role)
 	if err != nil {
 		return fmt.Errorf("ошибка добавления сотрудника: %w", err)
 	}

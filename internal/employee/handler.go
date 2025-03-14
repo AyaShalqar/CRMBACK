@@ -18,7 +18,6 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// AddEmployee - Добавляет сотрудника в магазин (только владелец)
 func (h *Handler) AddEmployee(w http.ResponseWriter, r *http.Request) {
 	claims, _ := auth.GetUserFromContext(r.Context())
 	if claims == nil {
@@ -97,6 +96,6 @@ func (h *Handler) RemoveEmployee(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Сотрудник удалён"))
 }
-func (h *Handler) CreateItems(w http.ResponseWriter, r *http.Request){
-	
+func (h *Handler) CreateItems(w http.ResponseWriter, r *http.Request) {
+
 }

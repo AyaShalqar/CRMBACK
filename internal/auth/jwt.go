@@ -8,7 +8,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var SecretKey = []byte("super_secret_key") // ❗ В будущем загружай из .env
+// SecretKey - ключ для подписи JWT.
+// Лучше хранить в .env
+var SecretKey = []byte("super_secret_key")
 
 type Claims struct {
 	ID    int    `json:"id"`
@@ -20,25 +22,24 @@ type Claims struct {
 // GenerateJWT генерирует токен для пользователя
 func GenerateJWT(id int, email, role string) (string, error) {
 	claims := Claims{
-		ID:    id, // ⬅️ Теперь `id` передаётся как аргумент.
+		ID:    id,
 		Email: email,
 		Role:  role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Токен живёт 24 часа
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // 24 часа
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(SecretKey)
-
 	if err != nil {
-		fmt.Println("Ошибка генерации токена:", err) // 🔥 Логируем ошибку
+		fmt.Println("Ошибка генерации токена:", err)
 		return "", err
 	}
 	return signedToken, nil
 }
 
-// ParseJWT проверяет токен и извлекает данные
+// ParseJWT разбирает токен и возвращает Claims
 func ParseJWT(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return SecretKey, nil

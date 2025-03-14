@@ -47,7 +47,7 @@ func main() {
 	adminService := admin.NewService(adminRepo)
 	adminHandler := admin.NewHandler(adminService)
 
-	// Создаём супер-админа после миграций
+	// Создаём супер-админа после миграций (пример)
 	if err := adminRepo.InitSuperAdmin(); err != nil {
 		log.Fatal("Ошибка создания супер-админа:", err)
 	}
@@ -60,8 +60,16 @@ func main() {
 	employeeService := employee.NewService(employeeRepo)
 	employeeHandler := employee.NewHandler(employeeService)
 
+	//-----------------------------------------
+	// Пример, как добавить authHandler (для /auth/me)
+	// Если у вас уже есть c, замените код ниже
+	authRepo := auth.NewRepository(database)    // Если реализовали
+	authService := auth.NewService(authRepo)    // Если реализовали
+	authHandler := auth.NewHandler(authService) // Если реализовали
+	//-----------------------------------------
+
 	// 4. Настраиваем маршруты с CORS
-	r := setupRoutes(adminHandler, shopHandler, employeeHandler)
+	r := setupRoutes(adminHandler, shopHandler, employeeHandler, authHandler)
 
 	// 5. Запускаем сервер с graceful shutdown
 	srv := &http.Server{
@@ -132,12 +140,13 @@ func setupRoutes(
 	adminHandler *admin.Handler,
 	shopHandler *shop.Handler,
 	employeeHandler *employee.Handler,
+	authHandler *auth.Handler, // ← добавляем сюда, если есть
 ) *chi.Mux {
 	r := chi.NewRouter()
 
 	// 🌟 Добавляем CORS middleware
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"}, // Фронтенд
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"}, // Фронтенд
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -149,8 +158,12 @@ func setupRoutes(
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
-	// Авторизация
-	r.Post("/admin/login", adminHandler.Login)
+	r.Post("/auth/login", adminHandler.Login)
+
+	r.Group(func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Get("/auth/me", authHandler.Me) // <-- реализация Me см. в auth/handler.go
+	})
 
 	// Управление пользователями
 	r.Route("/admin/users", func(r chi.Router) {
@@ -173,7 +186,6 @@ func setupRoutes(
 		r.Use(auth.AuthMiddleware)
 		r.Get("/", shopHandler.GetShopsByOwner)
 
-		// Управление сотрудниками магазина
 		r.Route("/{id}/employees", func(r chi.Router) {
 			r.Post("/", employeeHandler.AddEmployee)
 			r.Get("/", employeeHandler.GetEmployeesByShop)
