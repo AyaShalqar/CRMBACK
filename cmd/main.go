@@ -15,12 +15,30 @@ import (
 	"syscall"
 	"time"
 
+	_ "crm-backend/docs" // Импорт сгенерированной документации
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
+	_ "github.com/swaggo/swag" // для генерации Swagger
 )
 
-// Получаем строку подключения к БД из переменной окружения
+// @title CRM Backend API
+// @version 1.0
+// @description API для CRM системы управления магазинами
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email support@example.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
+// @schemes http
+
 func getPostgresDSN() string {
 	dsn := os.Getenv("POSTGRES_DSN")
 	if dsn == "" {
@@ -30,24 +48,21 @@ func getPostgresDSN() string {
 }
 
 func main() {
-	// 1. Инициализируем БД
+
 	database, err := initDB()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer database.Close()
 
-	// 2. Запускаем миграции
 	if err := runMigrations(database); err != nil {
 		log.Fatal("Ошибка миграции:", err)
 	}
 
-	// 3. Инициализируем репозитории, сервисы, хендлеры
 	adminRepo := admin.NewRepository(database)
 	adminService := admin.NewService(adminRepo)
 	adminHandler := admin.NewHandler(adminService)
 
-	// Создаём супер-админа после миграций (пример)
 	if err := adminRepo.InitSuperAdmin(); err != nil {
 		log.Fatal("Ошибка создания супер-админа:", err)
 	}
@@ -60,18 +75,12 @@ func main() {
 	employeeService := employee.NewService(employeeRepo)
 	employeeHandler := employee.NewHandler(employeeService)
 
-	//-----------------------------------------
-	// Пример, как добавить authHandler (для /auth/me)
-	// Если у вас уже есть c, замените код ниже
-	authRepo := auth.NewRepository(database)    // Если реализовали
-	authService := auth.NewService(authRepo)    // Если реализовали
-	authHandler := auth.NewHandler(authService) // Если реализовали
-	//-----------------------------------------
+	authRepo := auth.NewRepository(database)
+	authService := auth.NewService(authRepo)
+	authHandler := auth.NewHandler(authService)
 
-	// 4. Настраиваем маршруты с CORS
 	r := setupRoutes(adminHandler, shopHandler, employeeHandler, authHandler)
 
-	// 5. Запускаем сервер с graceful shutdown
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: r,
@@ -84,14 +93,12 @@ func main() {
 		}
 	}()
 
-	// Ожидаем SIGINT (Ctrl+C) или SIGTERM
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	fmt.Println("Shutting down server...")
 
-	// Завершаем сервер за 5 секунд
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -102,7 +109,6 @@ func main() {
 	fmt.Println("Server exiting")
 }
 
-// Подключение к PostgreSQL
 func initDB() (*db.DB, error) {
 	dsn := getPostgresDSN()
 	database, err := db.NewDB(dsn)
@@ -112,7 +118,6 @@ func initDB() (*db.DB, error) {
 	return database, nil
 }
 
-// Запуск всех миграций
 func runMigrations(database *db.DB) error {
 	adminRepo := admin.NewRepository(database)
 	if err := adminRepo.Migrate(); err != nil {
@@ -135,37 +140,38 @@ func runMigrations(database *db.DB) error {
 	return nil
 }
 
-// Настройка роутов с поддержкой CORS
 func setupRoutes(
 	adminHandler *admin.Handler,
 	shopHandler *shop.Handler,
 	employeeHandler *employee.Handler,
-	authHandler *auth.Handler, // ← добавляем сюда, если есть
+	authHandler *auth.Handler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
-	// 🌟 Добавляем CORS middleware
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"}, // Фронтенд
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
-		MaxAge:           300, // 5 минут кэширования CORS
+		MaxAge:           300,
 	}))
 
-	// Полезные middleware
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
+
+	// Swagger UI
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	r.Post("/auth/login", adminHandler.Login)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
-		r.Get("/auth/me", authHandler.Me) // <-- реализация Me см. в auth/handler.go
+		r.Get("/auth/me", authHandler.Me)
 	})
 
-	// Управление пользователями
 	r.Route("/admin/users", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/", adminHandler.GetUsers)
@@ -174,14 +180,12 @@ func setupRoutes(
 		r.Delete("/{id}", adminHandler.DeleteUser)
 	})
 
-	// Управление магазинами
 	r.Route("/admin/shops", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Post("/", shopHandler.CreateShopHandler)
 		r.Get("/", shopHandler.GetShopsHandler)
 	})
 
-	// Управление магазинами владельца
 	r.Route("/owner/shops", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/", shopHandler.GetShopsByOwner)
