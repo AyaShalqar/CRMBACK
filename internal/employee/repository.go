@@ -21,7 +21,6 @@ func (r *Repository) Migrate() error {
 			name VARCHAR(100) NOT NULL,
 			email VARCHAR(100) UNIQUE NOT NULL,
 			shop_id INT REFERENCES shops(id) ON DELETE CASCADE,
-;
 			role VARCHAR(50) NOT NULL
 		);
 	`)

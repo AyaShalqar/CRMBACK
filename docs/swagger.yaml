@@ -1,0 +1,726 @@
+basePath: /
+definitions:
+  admin.CreateUserDto:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+  admin.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  admin.User:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: integer
+      lastName:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+  employee.Employee:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      shop_id:
+        type: integer
+    type: object
+  shop.Item:
+    properties:
+      brand:
+        type: string
+      category:
+        description: '"штаны", "футболка", "кофта" и т.д.'
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      photo_url:
+        description: ссылка на картинку
+        type: string
+      purchase_price:
+        description: Цена закупки
+        type: number
+      sale_price:
+        description: Цена продажи
+        type: number
+      shop_id:
+        type: integer
+      size:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  shop.Shop:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      owner_id:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: API для CRM системы управления магазинами
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: CRM Backend API
+  version: "1.0"
+paths:
+  /admin/shops:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all shops
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/shop.Shop'
+            type: array
+        "500":
+          description: ошибка получения магазинов
+          schema:
+            type: string
+      summary: Get all shops
+      tags:
+      - shops
+    post:
+      consumes:
+      - application/json
+      description: Create a new shop for a user
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop object
+        in: body
+        name: shop
+        required: true
+        schema:
+          $ref: '#/definitions/shop.Shop'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Магазин создан для пользователя
+          schema:
+            type: string
+        "400":
+          description: неправильный формат данных
+          schema:
+            type: string
+        "403":
+          description: доступ запрещён
+          schema:
+            type: string
+        "500":
+          description: ошибка создания магазина
+          schema:
+            type: string
+      summary: Create new shop
+      tags:
+      - shops
+  /admin/users:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all users
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/admin.User'
+            type: array
+        "500":
+          description: не удалось получить пользователей
+          schema:
+            type: string
+      summary: Get all users
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with admin rights
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/admin.CreateUserDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь создан
+          schema:
+            type: string
+        "400":
+          description: неправильный формат данных
+          schema:
+            type: string
+        "500":
+          description: не удалось создать пользователя
+          schema:
+            type: string
+      summary: Create a new user
+      tags:
+      - admin
+  /admin/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by ID
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: пользователь удален
+          schema:
+            type: string
+        "400":
+          description: неправильный ID
+          schema:
+            type: string
+        "500":
+          description: не удалось удалить пользователя
+          schema:
+            type: string
+      summary: Delete a user
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update a user's information
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/admin.CreateUserDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь обновлён
+          schema:
+            type: string
+        "400":
+          description: неправильный формат данных
+          schema:
+            type: string
+        "500":
+          description: не удалось обновить пользователя
+          schema:
+            type: string
+      summary: Update a user
+      tags:
+      - admin
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Log in with username and password to get access token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/admin.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: неправильный формат данных
+          schema:
+            type: string
+        "401":
+          description: неверный пароль
+          schema:
+            type: string
+        "500":
+          description: ошибка генерации токена
+          schema:
+            type: string
+      summary: Authenticate user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Get information about the currently authenticated user
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User data with id, email, and role
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: No user in context
+          schema:
+            type: string
+      summary: Get current user
+      tags:
+      - auth
+  /owner/shops:
+    get:
+      consumes:
+      - application/json
+      description: Get all shops belonging to the authenticated owner
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/shop.Shop'
+            type: array
+        "401":
+          description: не авторизован
+          schema:
+            type: string
+        "500":
+          description: ошибка получения магазинов
+          schema:
+            type: string
+      summary: Get owner's shops
+      tags:
+      - owner
+  /owner/shops/{id}/employees:
+    get:
+      consumes:
+      - application/json
+      description: Get all employees of a specific shop
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/employee.Employee'
+            type: array
+        "400":
+          description: неправильный ID магазина
+          schema:
+            type: string
+        "401":
+          description: не авторизован
+          schema:
+            type: string
+        "403":
+          description: error message
+          schema:
+            type: string
+      summary: Get shop employees
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      description: Add a new employee to a shop
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee data
+        in: body
+        name: employee
+        required: true
+        schema:
+          $ref: '#/definitions/employee.Employee'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Сотрудник добавлен
+          schema:
+            type: string
+        "400":
+          description: неправильный формат данных
+          schema:
+            type: string
+        "401":
+          description: не авторизован
+          schema:
+            type: string
+        "403":
+          description: error message
+          schema:
+            type: string
+      summary: Add employee to shop
+      tags:
+      - employees
+  /owner/shops/{id}/employees/{employee_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an employee from a shop
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Employee ID
+        in: path
+        name: employee_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сотрудник удалён
+          schema:
+            type: string
+        "400":
+          description: неправильный ID сотрудника
+          schema:
+            type: string
+        "401":
+          description: не авторизован
+          schema:
+            type: string
+        "403":
+          description: error message
+          schema:
+            type: string
+      summary: Remove employee
+      tags:
+      - employees
+  /owner/shops/{shopID}/items:
+    get:
+      consumes:
+      - application/json
+      description: Get all items for a specific shop
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: shopID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/shop.Item'
+            type: array
+        "400":
+          description: invalid shopID
+          schema:
+            type: string
+        "500":
+          description: error message
+          schema:
+            type: string
+      summary: Get all items in a shop
+      tags:
+      - items
+    post:
+      consumes:
+      - application/json
+      description: Create a new item in a shop
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: shopID
+        required: true
+        type: integer
+      - description: Item details
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/shop.Item'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/shop.Item'
+        "400":
+          description: invalid request body
+          schema:
+            type: string
+        "500":
+          description: error message
+          schema:
+            type: string
+      summary: Create new item
+      tags:
+      - items
+  /owner/shops/{shopID}/items/{itemID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an item by ID
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: shopID
+        required: true
+        type: integer
+      - description: Item ID
+        in: path
+        name: itemID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid itemID
+          schema:
+            type: string
+        "500":
+          description: error message
+          schema:
+            type: string
+      summary: Delete item
+      tags:
+      - items
+    get:
+      consumes:
+      - application/json
+      description: Get a specific item by ID
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: shopID
+        required: true
+        type: integer
+      - description: Item ID
+        in: path
+        name: itemID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/shop.Item'
+        "400":
+          description: invalid itemID
+          schema:
+            type: string
+        "404":
+          description: error message
+          schema:
+            type: string
+      summary: Get specific item
+      tags:
+      - items
+    put:
+      consumes:
+      - application/json
+      description: Update an existing item
+      parameters:
+      - description: Bearer JWT token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Shop ID
+        in: path
+        name: shopID
+        required: true
+        type: integer
+      - description: Item ID
+        in: path
+        name: itemID
+        required: true
+        type: integer
+      - description: Item details
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/shop.Item'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid request body
+          schema:
+            type: string
+        "500":
+          description: error message
+          schema:
+            type: string
+      summary: Update item
+      tags:
+      - items
+schemes:
+- http
+swagger: "2.0"

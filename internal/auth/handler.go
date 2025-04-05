@@ -50,8 +50,16 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// Me — GET /auth/me
-// Требует auth.AuthMiddleware, который кладёт userID в context
+// Me godoc
+// @Summary Get current user
+// @Description Get information about the currently authenticated user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Success 200 {object} map[string]interface{} "User data with id, email, and role"
+// @Failure 401 {string} string "No user in context"
+// @Router /auth/me [get]
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	claims, ok := GetUserFromContext(r.Context())
 	if !ok {

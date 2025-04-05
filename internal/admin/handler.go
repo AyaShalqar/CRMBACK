@@ -22,6 +22,18 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// CreateUser godoc
+// @Summary Create a new user
+// @Description Create a new user with admin rights
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param user body CreateUserDto true "User data"
+// @Success 201 {string} string "Пользователь создан"
+// @Failure 400 {string} string "неправильный формат данных"
+// @Failure 500 {string} string "не удалось создать пользователя"
+// @Router /admin/users [post]
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var dto CreateUserDto
 
@@ -39,6 +51,16 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Пользователь создан"))
 }
 
+// GetUsers godoc
+// @Summary Get all users
+// @Description Get a list of all users
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Success 200 {array} User
+// @Failure 500 {string} string "не удалось получить пользователей"
+// @Router /admin/users [get]
 func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := h.service.GetUsers(r.Context())
@@ -50,6 +72,18 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
+// DeleteUser godoc
+// @Summary Delete a user
+// @Description Delete a user by ID
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param id path int true "User ID"
+// @Success 200 {string} string "пользователь удален"
+// @Failure 400 {string} string "неправильный ID"
+// @Failure 500 {string} string "не удалось удалить пользователя"
+// @Router /admin/users/{id} [delete]
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
@@ -67,6 +101,20 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("пользователь удален"))
 }
 
+// UpdateUser godoc
+// @Summary Update a user
+// @Description Update a user's information
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param id path int true "User ID"
+// @Param user body CreateUserDto true "User data"
+// @Success 200 {string} string "Пользователь обновлён"
+// @Failure 400 {string} string "неправильный ID"
+// @Failure 400 {string} string "неправильный формат данных"
+// @Failure 500 {string} string "не удалось обновить пользователя"
+// @Router /admin/users/{id} [put]
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
@@ -98,6 +146,19 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Пользователь обновлён"))
 }
 
+// Login godoc
+// @Summary Authenticate user
+// @Description Log in with username and password to get access token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} map[string]string "token"
+// @Failure 400 {string} string "неправильный формат данных"
+// @Failure 401 {string} string "пользователь не найден"
+// @Failure 401 {string} string "неверный пароль"
+// @Failure 500 {string} string "ошибка генерации токена"
+// @Router /auth/login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// UserContextKey - ключ для хранения Claims в context
 type UserContextKey struct{}
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -24,7 +23,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Сохраняем claims в context
 		ctx := context.WithValue(r.Context(), UserContextKey{}, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

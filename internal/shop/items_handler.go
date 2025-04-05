@@ -16,7 +16,20 @@ func NewItemHandler(service *ItemService) *ItemHandler {
 	return &ItemHandler{service: service}
 }
 
-// CreateItemHandler - POST /owner/shops/{shopID}/items
+// CreateItemHandler godoc
+// @Summary Create new item
+// @Description Create a new item in a shop
+// @Tags items
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param shopID path int true "Shop ID"
+// @Param item body Item true "Item details"
+// @Success 201 {object} Item
+// @Failure 400 {string} string "invalid shopID"
+// @Failure 400 {string} string "invalid request body"
+// @Failure 500 {string} string "error message"
+// @Router /owner/shops/{shopID}/items [post]
 func (h *ItemHandler) CreateItemHandler(w http.ResponseWriter, r *http.Request) {
 	shopIDStr := chi.URLParam(r, "shopID")
 	shopID, err := strconv.Atoi(shopIDStr)
@@ -45,7 +58,18 @@ func (h *ItemHandler) CreateItemHandler(w http.ResponseWriter, r *http.Request) 
 	_ = json.NewEncoder(w).Encode(item)
 }
 
-// GetItemsHandler - GET /owner/shops/{shopID}/items
+// GetItemsHandler godoc
+// @Summary Get all items in a shop
+// @Description Get all items for a specific shop
+// @Tags items
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param shopID path int true "Shop ID"
+// @Success 200 {array} Item
+// @Failure 400 {string} string "invalid shopID"
+// @Failure 500 {string} string "error message"
+// @Router /owner/shops/{shopID}/items [get]
 func (h *ItemHandler) GetItemsHandler(w http.ResponseWriter, r *http.Request) {
 	shopIDStr := chi.URLParam(r, "shopID")
 	shopID, err := strconv.Atoi(shopIDStr)
@@ -63,7 +87,19 @@ func (h *ItemHandler) GetItemsHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(items)
 }
 
-// GetItemHandler - GET /owner/shops/{shopID}/items/{itemID}
+// GetItemHandler godoc
+// @Summary Get specific item
+// @Description Get a specific item by ID
+// @Tags items
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param shopID path int true "Shop ID"
+// @Param itemID path int true "Item ID"
+// @Success 200 {object} Item
+// @Failure 400 {string} string "invalid itemID"
+// @Failure 404 {string} string "error message"
+// @Router /owner/shops/{shopID}/items/{itemID} [get]
 func (h *ItemHandler) GetItemHandler(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := chi.URLParam(r, "itemID")
 	itemID, err := strconv.Atoi(itemIDStr)
@@ -81,7 +117,22 @@ func (h *ItemHandler) GetItemHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
-// UpdateItemHandler - PUT /owner/shops/{shopID}/items/{itemID}
+// UpdateItemHandler godoc
+// @Summary Update item
+// @Description Update an existing item
+// @Tags items
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param shopID path int true "Shop ID"
+// @Param itemID path int true "Item ID"
+// @Param item body Item true "Item details"
+// @Success 200 {object} map[string]string
+// @Failure 400 {string} string "invalid shopID"
+// @Failure 400 {string} string "invalid itemID"
+// @Failure 400 {string} string "invalid request body"
+// @Failure 500 {string} string "error message"
+// @Router /owner/shops/{shopID}/items/{itemID} [put]
 func (h *ItemHandler) UpdateItemHandler(w http.ResponseWriter, r *http.Request) {
 	shopIDStr := chi.URLParam(r, "shopID")
 	shopID, err := strconv.Atoi(shopIDStr)
@@ -116,7 +167,19 @@ func (h *ItemHandler) UpdateItemHandler(w http.ResponseWriter, r *http.Request) 
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "updated"})
 }
 
-// DeleteItemHandler - DELETE /owner/shops/{shopID}/items/{itemID}
+// DeleteItemHandler godoc
+// @Summary Delete item
+// @Description Delete an item by ID
+// @Tags items
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer JWT token"
+// @Param shopID path int true "Shop ID"
+// @Param itemID path int true "Item ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {string} string "invalid itemID"
+// @Failure 500 {string} string "error message"
+// @Router /owner/shops/{shopID}/items/{itemID} [delete]
 func (h *ItemHandler) DeleteItemHandler(w http.ResponseWriter, r *http.Request) {
 	itemIDStr := chi.URLParam(r, "itemID")
 	itemID, err := strconv.Atoi(itemIDStr)
