@@ -4,6 +4,8 @@ import (
 	"context"
 	"crm-backend/internal/db"
 	"fmt"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Repository struct {
@@ -14,6 +16,14 @@ func NewRepository(db *db.DB) *Repository {
 	return &Repository{db: db}
 }
 
+func hashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	if err != nil {
+		return "", fmt.Errorf("ошибка хеширования пароля: %w", err)
+	}
+	return string(hash), nil
+}
 func (r *Repository) Migrate() error {
 	_, err := r.db.Conn.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS employees (
@@ -22,6 +32,7 @@ func (r *Repository) Migrate() error {
 			email VARCHAR(100) UNIQUE NOT NULL,
 			shop_id INT REFERENCES shops(id) ON DELETE CASCADE,
 			role VARCHAR(50) NOT NULL
+			password VARCHAR(100) NOT NULL
 		);
 	`)
 	if err != nil {
@@ -42,10 +53,23 @@ func (r *Repository) IsOwner(ctx context.Context, shopID, ownerID int) (bool, er
 }
 
 func (r *Repository) AddEmployee(ctx context.Context, employee Employee) error {
-	query := `INSERT INTO employees (name, password, email, shop_id, role) VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.Conn.Exec(ctx, query, employee.Name, employee.Email, employee.ShopID, employee.Password, employee.Role)
+	hashedPassword, err := hashPassword(employee.Password)
 	if err != nil {
-		return fmt.Errorf("ошибка добавления сотрудника: %w", err)
+		return fmt.Errorf("не удалось захешировать пароль сотрудника: %w", err)
+	}
+
+	query := `INSERT INTO employees (name, email, shop_id, password, role) VALUES ($1, $2, $3, $4, $5)`
+
+	_, err = r.db.Conn.Exec(ctx, query,
+		employee.Name,
+		employee.Email,
+		employee.ShopID,
+		hashedPassword,
+		employee.Role,
+	)
+	if err != nil {
+
+		return fmt.Errorf("ошибка добавления сотрудника в БД: %w", err)
 	}
 	return nil
 }
