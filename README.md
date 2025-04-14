@@ -143,7 +143,7 @@ PDF-документация проекта доступна в файле:
 
 Zeinaddin Zurgambayev
 Backend-разработчик | Golang | Казахстан 🇰🇿
-LinkedIn (по желанию)
+LinkedIn https://www.linkedin.com/in/zeinaddin-zurgambaev-5b5a392bb/
 
 📌 Планы на будущее
 
