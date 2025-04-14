@@ -28,4 +28,3 @@ func (s *Service) DeleteShop(ctx context.Context, id int) error {
 func (s *Service) GetShopsByOwner(ctx context.Context, ownerID int) ([]Shop, error) {
 	return s.repo.GetShopsByOwner(ctx, ownerID)
 }
-

@@ -10,12 +10,10 @@ type Repository struct {
 	db *db.DB
 }
 
-// NewRepository — конструктор
 func NewRepository(db *db.DB) *Repository {
 	return &Repository{db: db}
 }
 
-// Migrate — создаёт (или меняет) таблицу employees без полей email/password/role
 func (r *Repository) Migrate() error {
 	_, err := r.db.Conn.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS employees (
@@ -33,7 +31,6 @@ func (r *Repository) Migrate() error {
 	return nil
 }
 
-// IsOwner проверяет, является ли ownerID владельцем магазина shopID
 func (r *Repository) IsOwner(ctx context.Context, shopID, ownerID int) (bool, error) {
 	var exists bool
 	query := `SELECT EXISTS(SELECT 1 FROM shops WHERE id = $1 AND owner_id = $2)`
@@ -44,7 +41,6 @@ func (r *Repository) IsOwner(ctx context.Context, shopID, ownerID int) (bool, er
 	return exists, nil
 }
 
-// AddEmployeeRecord — вставляет запись (user_id, shop_id, position) в таблицу employees
 func (r *Repository) AddEmployeeRecord(ctx context.Context, userID, shopID int, position string) error {
 	query := `INSERT INTO employees (user_id, shop_id, position) VALUES ($1, $2, $3)`
 	_, err := r.db.Conn.Exec(ctx, query, userID, shopID, position)
@@ -54,7 +50,6 @@ func (r *Repository) AddEmployeeRecord(ctx context.Context, userID, shopID int, 
 	return nil
 }
 
-// GetEmployeesByShop возвращает список сотрудников конкретного магазина
 func (r *Repository) GetEmployeesByShop(ctx context.Context, shopID int) ([]Employee, error) {
 	query := `SELECT id, user_id, shop_id, position, hired_at FROM employees WHERE shop_id = $1`
 	rows, err := r.db.Conn.Query(ctx, query, shopID)
@@ -77,7 +72,6 @@ func (r *Repository) GetEmployeesByShop(ctx context.Context, shopID int) ([]Empl
 	return employees, nil
 }
 
-// RemoveEmployee удаляет сотрудника по ID
 func (r *Repository) RemoveEmployee(ctx context.Context, employeeID int) error {
 	if employeeID <= 0 {
 		return fmt.Errorf("неверный ID сотрудника: %d", employeeID)
@@ -95,7 +89,6 @@ func (r *Repository) RemoveEmployee(ctx context.Context, employeeID int) error {
 	return nil
 }
 
-// GetShopIDByEmployee возвращает shop_id по ID сотрудника
 func (r *Repository) GetShopIDByEmployee(ctx context.Context, employeeID int) (int, error) {
 	var shopID int
 	query := `SELECT shop_id FROM employees WHERE id = $1`

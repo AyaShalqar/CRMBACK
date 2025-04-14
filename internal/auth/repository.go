@@ -6,15 +6,13 @@ import (
 	"fmt"
 )
 
-// User — упрощённая модель юзера (подставьте поля, которые есть в вашей БД)
 type User struct {
 	ID           int    `db:"id"`
 	Email        string `db:"email"`
 	PasswordHash string `db:"password_hash"`
-	Role         string `db:"role"` // "admin", "owner", etc.
+	Role         string `db:"role"`
 }
 
-// Repository — отвечает за запросы к таблице users
 type Repository struct {
 	db *db.DB
 }
@@ -23,7 +21,6 @@ func NewRepository(database *db.DB) *Repository {
 	return &Repository{db: database}
 }
 
-// FindByEmail — находит пользователя по email
 func (r *Repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
         SELECT id, email, password_hash, role
@@ -40,7 +37,6 @@ func (r *Repository) FindByEmail(ctx context.Context, email string) (*User, erro
 	return &u, nil
 }
 
-// FindByID — находит пользователя по ID
 func (r *Repository) FindByID(ctx context.Context, userID int) (*User, error) {
 	query := `
         SELECT id, email, password_hash, role
