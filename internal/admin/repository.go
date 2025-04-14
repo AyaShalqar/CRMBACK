@@ -17,15 +17,15 @@ func NewRepository(db *db.DB) *Repository {
 
 func (r *Repository) Migrate() error {
 	_, err := r.db.Conn.Exec(context.Background(), `
-		CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			first_name VARCHAR(50),
-			last_name VARCHAR(50),
-			email VARCHAR(100) UNIQUE,
-			password VARCHAR(100),
-			role VARCHAR(20)
-		);
-	`)
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        first_name VARCHAR(50),
+        last_name VARCHAR(50),
+        email VARCHAR(100) UNIQUE,
+        password_hash VARCHAR(100),  -- <<== ИЗМЕНЕНО ЗДЕСЬ
+        role VARCHAR(20)
+    );
+`)
 	if err != nil {
 		return fmt.Errorf("ошибка создания таблицы users: %w", err)
 	}
@@ -73,9 +73,9 @@ func (r *Repository) CreateUser(ctx context.Context, user User) error {
 	}
 
 	_, err = r.db.Conn.Exec(ctx, `
-		INSERT INTO users (first_name, last_name, email, password, role)
-		VALUES ($1, $2, $3, $4, $5)
-	`, user.FirstName, user.LastName, user.Email, hashedPassword, user.Role)
+    INSERT INTO users (first_name, last_name, email, password_hash, role) -- <<== ИЗМЕНЕНО ЗДЕСЬ
+    VALUES ($1, $2, $3, $4, $5)
+`, user.FirstName, user.LastName, user.Email, hashedPassword, user.Role)
 
 	if err != nil {
 		return fmt.Errorf("ошибка создания пользователя: %w", err)
@@ -86,7 +86,7 @@ func (r *Repository) CreateUser(ctx context.Context, user User) error {
 
 func (r *Repository) GetUsers(ctx context.Context) ([]User, error) {
 	rows, err := r.db.Conn.Query(ctx, `
-		SELECT id, first_name, last_name, email, password, role
+		SELECT id, first_name, last_name, email, password_hash, role
 		FROM users
 	`)
 
@@ -131,7 +131,7 @@ func (r *Repository) UpdateUser(ctx context.Context, user User) error {
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	var user User
 	err := r.db.Conn.QueryRow(ctx, `
-		SELECT id, first_name, last_name, email, password, role
+		SELECT id, first_name, last_name, email,  password_hash, role
 		FROM users
 		WHERE email = $1
 	`, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.Role)

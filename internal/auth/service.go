@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -12,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var ErrInvalidCredentials = errors.New("invalid email or password")
@@ -36,12 +35,15 @@ func (s *Service) LoginUser(ctx context.Context, email, password string) (*User,
 		return nil, "", ErrInvalidCredentials // скрываем детали
 	}
 
-	// Проверяем пароль
-	// Здесь упрощённо: sha256(plain) == user.PasswordHash?
-	// В реальном проекте лучше bcrypt.CompareHashAndPassword(user.PasswordHash, password).
-	passHash := hashPassword(password) // или bcrypt.CompareHashAndPassword
-	if passHash != user.PasswordHash {
-		return nil, "", ErrInvalidCredentials
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+
+			return nil, "", ErrInvalidCredentials
+		}
+		fmt.Printf("Ошибка сравнения пароля для пользователя %s: %v\n", email, err)
+
+		return nil, "", fmt.Errorf("внутренняя ошибка сервера")
 	}
 
 	// Генерируем JWT
@@ -69,11 +71,4 @@ func (s *Service) generateJWT(u *User) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.jwtSecretKey))
-}
-
-// hashPassword — очень упрощённый для примера
-func hashPassword(password string) string {
-	// В реальном проекте лучше использовать bcrypt или argon2
-	h := sha256.Sum256([]byte(password))
-	return hex.EncodeToString(h[:])
 }

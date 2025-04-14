@@ -21,7 +21,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
-	_ "github.com/swaggo/swag" // для генерации Swagger
+	_ "github.com/swaggo/swag"
 )
 
 // @title CRM Backend API
@@ -38,14 +38,6 @@ import (
 // @host localhost:8080
 // @BasePath /
 // @schemes http
-
-func getPostgresDSN() string {
-	dsn := os.Getenv("POSTGRES_DSN")
-	if dsn == "" {
-		dsn = "postgres://crm_user:crm_pass@localhost:5433/crm_db"
-	}
-	return dsn
-}
 
 func main() {
 
@@ -72,7 +64,8 @@ func main() {
 	shopHandler := shop.NewHandler(shopService)
 
 	employeeRepo := employee.NewRepository(database)
-	employeeService := employee.NewService(employeeRepo)
+
+	employeeService := employee.NewService(employeeRepo, database)
 	employeeHandler := employee.NewHandler(employeeService)
 
 	authRepo := auth.NewRepository(database)
@@ -110,7 +103,12 @@ func main() {
 }
 
 func initDB() (*db.DB, error) {
-	dsn := getPostgresDSN()
+
+	dsn := os.Getenv("POSTGRES_DSN")
+	if dsn == "" {
+
+		dsn = "postgres://crm_user:crm_pass@localhost:5433/crm_db"
+	}
 	database, err := db.NewDB(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка подключения к базе: %w", err)
@@ -119,11 +117,13 @@ func initDB() (*db.DB, error) {
 }
 
 func runMigrations(database *db.DB) error {
+
 	adminRepo := admin.NewRepository(database)
 	if err := adminRepo.Migrate(); err != nil {
 		return fmt.Errorf("Ошибка миграции admin/users: %w", err)
 	}
 
+	// Миграция таблицы shops и items
 	shopRepo := shop.NewRepository(database)
 	if err := shopRepo.Migrate(); err != nil {
 		return fmt.Errorf("Ошибка миграции shops: %w", err)
@@ -148,6 +148,7 @@ func setupRoutes(
 ) *chi.Mux {
 	r := chi.NewRouter()
 
+	// CORS
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"}, // Фронтенд
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -160,13 +161,11 @@ func setupRoutes(
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
-	// Swagger UI
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
 
 	r.Post("/auth/login", adminHandler.Login)
-
 	r.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)
 		r.Get("/auth/me", authHandler.Me)

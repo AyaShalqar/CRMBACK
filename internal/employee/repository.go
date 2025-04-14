@@ -4,35 +4,26 @@ import (
 	"context"
 	"crm-backend/internal/db"
 	"fmt"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Repository struct {
 	db *db.DB
 }
 
+// NewRepository — конструктор
 func NewRepository(db *db.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func hashPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-
-	if err != nil {
-		return "", fmt.Errorf("ошибка хеширования пароля: %w", err)
-	}
-	return string(hash), nil
-}
+// Migrate — создаёт (или меняет) таблицу employees без полей email/password/role
 func (r *Repository) Migrate() error {
 	_, err := r.db.Conn.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS employees (
 			id SERIAL PRIMARY KEY,
-			name VARCHAR(100) NOT NULL,
-			email VARCHAR(100) UNIQUE NOT NULL,
-			shop_id INT REFERENCES shops(id) ON DELETE CASCADE,
-			role VARCHAR(50) NOT NULL
-			password VARCHAR(100) NOT NULL
+			user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			shop_id INT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+			position VARCHAR(100),
+			hired_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 		);
 	`)
 	if err != nil {
@@ -42,6 +33,7 @@ func (r *Repository) Migrate() error {
 	return nil
 }
 
+// IsOwner проверяет, является ли ownerID владельцем магазина shopID
 func (r *Repository) IsOwner(ctx context.Context, shopID, ownerID int) (bool, error) {
 	var exists bool
 	query := `SELECT EXISTS(SELECT 1 FROM shops WHERE id = $1 AND owner_id = $2)`
@@ -52,31 +44,19 @@ func (r *Repository) IsOwner(ctx context.Context, shopID, ownerID int) (bool, er
 	return exists, nil
 }
 
-func (r *Repository) AddEmployee(ctx context.Context, employee Employee) error {
-	hashedPassword, err := hashPassword(employee.Password)
+// AddEmployeeRecord — вставляет запись (user_id, shop_id, position) в таблицу employees
+func (r *Repository) AddEmployeeRecord(ctx context.Context, userID, shopID int, position string) error {
+	query := `INSERT INTO employees (user_id, shop_id, position) VALUES ($1, $2, $3)`
+	_, err := r.db.Conn.Exec(ctx, query, userID, shopID, position)
 	if err != nil {
-		return fmt.Errorf("не удалось захешировать пароль сотрудника: %w", err)
-	}
-
-	query := `INSERT INTO employees (name, email, shop_id, password, role) VALUES ($1, $2, $3, $4, $5)`
-
-	_, err = r.db.Conn.Exec(ctx, query,
-		employee.Name,
-		employee.Email,
-		employee.ShopID,
-		hashedPassword,
-		employee.Role,
-	)
-	if err != nil {
-
 		return fmt.Errorf("ошибка добавления сотрудника в БД: %w", err)
 	}
 	return nil
 }
 
-// GetEmployeesByShop возвращает список сотрудников магазина
+// GetEmployeesByShop возвращает список сотрудников конкретного магазина
 func (r *Repository) GetEmployeesByShop(ctx context.Context, shopID int) ([]Employee, error) {
-	query := `SELECT id, name, email, shop_id, role FROM employees WHERE shop_id = $1`
+	query := `SELECT id, user_id, shop_id, position, hired_at FROM employees WHERE shop_id = $1`
 	rows, err := r.db.Conn.Query(ctx, query, shopID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения сотрудников: %w", err)
@@ -86,7 +66,7 @@ func (r *Repository) GetEmployeesByShop(ctx context.Context, shopID int) ([]Empl
 	var employees []Employee
 	for rows.Next() {
 		var emp Employee
-		if err := rows.Scan(&emp.ID, &emp.Name, &emp.Email, &emp.ShopID, &emp.Role); err != nil {
+		if err := rows.Scan(&emp.ID, &emp.UserID, &emp.ShopID, &emp.Position, &emp.HiredAt); err != nil {
 			return nil, fmt.Errorf("ошибка чтения данных сотрудника: %w", err)
 		}
 		employees = append(employees, emp)
@@ -97,6 +77,7 @@ func (r *Repository) GetEmployeesByShop(ctx context.Context, shopID int) ([]Empl
 	return employees, nil
 }
 
+// RemoveEmployee удаляет сотрудника по ID
 func (r *Repository) RemoveEmployee(ctx context.Context, employeeID int) error {
 	if employeeID <= 0 {
 		return fmt.Errorf("неверный ID сотрудника: %d", employeeID)
@@ -108,13 +89,13 @@ func (r *Repository) RemoveEmployee(ctx context.Context, employeeID int) error {
 		return fmt.Errorf("ошибка удаления сотрудника: %w", err)
 	}
 
-	affectedRows := res.RowsAffected()
-	if affectedRows == 0 {
+	if res.RowsAffected() == 0 {
 		return fmt.Errorf("сотрудник с ID %d не найден", employeeID)
 	}
 	return nil
 }
 
+// GetShopIDByEmployee возвращает shop_id по ID сотрудника
 func (r *Repository) GetShopIDByEmployee(ctx context.Context, employeeID int) (int, error) {
 	var shopID int
 	query := `SELECT shop_id FROM employees WHERE id = $1`
