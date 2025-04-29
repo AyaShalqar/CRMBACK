@@ -1,0 +1,168 @@
+@startuml
+' Database
+class DB {
+Conn: pgx.Conn
+NewDB(dsn string): (DB, error)
+Close()
+}
+' Models
+class User {
+ID: int
+FirstName: string
+LastName: string
+Email: string
+Password: string
+Role: string
+}
+class Shop {
+ID: int
+Name: string
+Description: string
+OwnerID: int
+}
+class Item {
+ID: int
+ShopID: int
+Name: string
+Brand: string
+Category: string
+Size: string
+PurchasePrice: float64
+SalePrice: float64
+PhotoURL: string
+CreatedAt: time.Time
+UpdatedAt: time.Time
+}
+class Employee {
+ID: int
+UserID: int
+ShopID: int
+Position: string
+HiredAt: time.Time
+}
+class Claims {
+ID: int
+Email: string
+Role: string
+RegisteredClaims: jwt.RegisteredClaims
+}
+' Repositories
+class AdminRepository {
+db: DB
+NewRepository(db DB): Repository
+Migrate(): error
+InitSuperAdmin(): error
+CreateUser(ctx context.Context, user User): error
+GetUsers(ctx context.Context): ([]User, error)
+DeleteUser(ctx context.Context, id int): error
+UpdateUser(ctx context.Context, user User): error
+GetUserByEmail(ctx context.Context, email string): (User, error)
+}
+class AuthRepository {
+db: DB
+NewRepository(database DB): Repository
+FindByEmail(ctx context.Context, email string): (User, error)
+FindByID(ctx context.Context, userID int): (User, error)
+}
+class ShopRepository {
+db: DB
+NewRepository(db DB): Repository
+Migrate(): error
+MigrateItems(): error
+CreateShop(ctx context.Context, shop Shop): error
+GetShops(ctx context.Context): ([]Shop, error)
+UpdateShop(ctx context.Context, shop Shop): error
+DeleteShop(ctx context.Context, id int): error
+GetShopsByOwner(ctx context.Context, ownerID int): ([]Shop, error)
+CreateItem(ctx context.Context, item Item): error
+GetItems(ctx context.Context, shopID int): ([]Item, error)
+GetItemByID(ctx context.Context, itemID int): (Item, error)
+UpdateItem(ctx context.Context, item Item): error
+DeleteItem(ctx context.Context, itemID int): error
+}
+class EmployeeRepository {
+db: DB
+NewRepository(db DB): Repository
+Migrate(): error
+IsOwner(ctx context.Context, shopID, ownerID int): (bool, error)
+AddEmployeeRecord(ctx context.Context, userID, shopID int, position string): error
+GetEmployeesByShop(ctx context.Context, shopID int): ([]Employee, error)
+RemoveEmployee(ctx context.Context, employeeID int): error
+GetShopIDByEmployee(ctx context.Context, employeeID int): (int, error)
+}
+' Services
+class AdminService {
+repo: AdminRepository
+NewService(repo Repository): Service
+CreateUser(ctx context.Context, user User): error
+InitSuperAdmin(): error
+CreateUserByAdmin(ctx context.Context, dto CreateUserDto): error
+GetUsers(ctx context.Context): ([]User, error)
+DeleteUser(ctx context.Context, id int): error
+UpdateUser(ctx context.Context, user User): error
+GetUserByEmail(ctx context.Context, email string): (User, error)
+}
+class AuthService {
+repo: AuthRepository
+jwtSecretKey: string
+NewService(r Repository): Service
+LoginUser(ctx context.Context, email, password string): (User, string, error)
+GetUserByID(ctx context.Context, userID int): (User, error)
+generateJWT(u User): (string, error)
+}
+class ShopService {
+repo: ShopRepository
+NewService(repo Repository): Service
+CreateShop(ctx context.Context, shop Shop): error
+GetShops(ctx context.Context): ([]Shop, error)
+UpdateShop(ctx context.Context, shop Shop): error
+DeleteShop(ctx context.Context, id int): error
+GetShopsByOwner(ctx context.Context, ownerID int): ([]Shop, error)
+}
+class ItemService {
+repo: ShopRepository
+NewItemService(repo Repository): ItemService
+CreateItem(ctx context.Context, item Item): error
+GetItemsForShop(ctx context.Context, shopID int): ([]Item, error)
+GetItemByID(ctx context.Context, itemID int): (Item, error)
+UpdateItem(ctx context.Context, item Item): error
+DeleteItem(ctx context.Context, itemID int): error
+}
+class EmployeeService {
+repo: EmployeeRepository
+db: DB
+NewService(repo Repository, db DB): Service
+AddEmployee(ctx context.Context, ownerID int, employee Employee): error
+GetEmployeesByShop(ctx context.Context, ownerID, shopID int): ([]Employee, error)
+RemoveEmployee(ctx context.Context, ownerID, employeeID int): error
+CreateUserForEmployee(ctx context.Context, req AddEmployeeRequest): (int, error)
+AddEmployeeLink(ctx context.Context, userID, shopID int, position string, ownerID int): error
+}
+' JWT utilities
+class JWTUtils {
+GenerateJWT(id int, email, role string): (string, error)
+ParseJWT(tokenString string): (Claims, error)
+}
+' Relationships
+AdminRepository --> DB
+AuthRepository --> DB
+ShopRepository --> DB
+EmployeeRepository --> DB
+AdminService --> AdminRepository
+AuthService --> AuthRepository
+ShopService --> ShopRepository
+ItemService --> ShopRepository
+EmployeeService --> EmployeeRepository
+EmployeeService --> DB
+User -- AdminRepository
+User -- AuthRepository
+Shop -- ShopRepository
+Item -- ShopRepository
+Employee -- EmployeeRepository
+Shop "1" -- "0.." Item : contains
+Shop "1" -- "0.." Employee : employs
+User "1" -- "0.." Shop : owns
+User "1" -- "0.." Employee : is
+Claims -- User : represents
+AuthService -- JWTUtils : uses
+@enduml
